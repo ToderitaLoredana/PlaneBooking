@@ -635,6 +635,230 @@
           "available": false
         }
       }
+    },
+    {
+      "from": "BER",
+      "to": "PAR",
+      "base_cost": 140.0,
+      "distance": 878.0,
+      "schedule": {
+        "monday": {
+          "departure_time": "08:30",
+          "arrival_time": "10:45",
+          "cost_multiplier": 1.0,
+          "available": true
+        },
+        "wednesday": {
+          "departure_time": "14:15",
+          "arrival_time": "16:30",
+          "cost_multiplier": 0.95,
+          "available": true
+        },
+        "friday": {
+          "departure_time": "11:00",
+          "arrival_time": "13:15",
+          "cost_multiplier": 1.1,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "ROM",
+      "to": "PAR",
+      "base_cost": 150.0,
+      "distance": 1106.0,
+      "schedule": {
+        "tuesday": {
+          "departure_time": "09:15",
+          "arrival_time": "11:30",
+          "cost_multiplier": 0.9,
+          "available": true
+        },
+        "thursday": {
+          "departure_time": "16:45",
+          "arrival_time": "19:00",
+          "cost_multiplier": 0.85,
+          "available": true
+        },
+        "saturday": {
+          "departure_time": "07:30",
+          "arrival_time": "09:45",
+          "cost_multiplier": 1.15,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "MAD",
+      "to": "PAR",
+      "base_cost": 160.0,
+      "distance": 1054.0,
+      "schedule": {
+        "monday": {
+          "departure_time": "10:45",
+          "arrival_time": "13:00",
+          "cost_multiplier": 1.0,
+          "available": true
+        },
+        "wednesday": {
+          "departure_time": "15:30",
+          "arrival_time": "17:45",
+          "cost_multiplier": 0.95,
+          "available": true
+        },
+        "sunday": {
+          "departure_time": "18:15",
+          "arrival_time": "20:30",
+          "cost_multiplier": 1.0,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "AMS",
+      "to": "BER",
+      "base_cost": 130.0,
+      "distance": 576.0,
+      "schedule": {
+        "tuesday": {
+          "departure_time": "07:45",
+          "arrival_time": "09:30",
+          "cost_multiplier": 0.9,
+          "available": true
+        },
+        "thursday": {
+          "departure_time": "12:15",
+          "arrival_time": "14:00",
+          "cost_multiplier": 0.85,
+          "available": true
+        },
+        "saturday": {
+          "departure_time": "16:30",
+          "arrival_time": "18:15",
+          "cost_multiplier": 1.1,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "IST",
+      "to": "BER",
+      "base_cost": 220.0,
+      "distance": 1360.0,
+      "schedule": {
+        "monday": {
+          "departure_time": "06:30",
+          "arrival_time": "09:15",
+          "cost_multiplier": 1.0,
+          "available": true
+        },
+        "friday": {
+          "departure_time": "13:45",
+          "arrival_time": "16:30",
+          "cost_multiplier": 1.1,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "DXB",
+      "to": "IST",
+      "base_cost": 280.0,
+      "distance": 2230.0,
+      "schedule": {
+        "tuesday": {
+          "departure_time": "22:00",
+          "arrival_time": "01:30",
+          "cost_multiplier": 0.9,
+          "available": true
+        },
+        "saturday": {
+          "departure_time": "08:30",
+          "arrival_time": "12:00",
+          "cost_multiplier": 1.15,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "SIN",
+      "to": "DXB",
+      "base_cost": 420.0,
+      "distance": 5840.0,
+      "schedule": {
+        "wednesday": {
+          "departure_time": "23:15",
+          "arrival_time": "03:45",
+          "cost_multiplier": 0.95,
+          "available": true
+        },
+        "sunday": {
+          "departure_time": "09:00",
+          "arrival_time": "13:30",
+          "cost_multiplier": 1.0,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "SYD",
+      "to": "SIN",
+      "base_cost": 380.0,
+      "distance": 6300.0,
+      "schedule": {
+        "monday": {
+          "departure_time": "07:30",
+          "arrival_time": "14:15",
+          "cost_multiplier": 1.0,
+          "available": true
+        },
+        "thursday": {
+          "departure_time": "21:45",
+          "arrival_time": "04:30",
+          "cost_multiplier": 0.85,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "TYO",
+      "to": "SYD",
+      "base_cost": 450.0,
+      "distance": 7820.0,
+      "schedule": {
+        "tuesday": {
+          "departure_time": "10:00",
+          "arrival_time": "20:30",
+          "cost_multiplier": 0.9,
+          "available": true
+        },
+        "saturday": {
+          "departure_time": "18:15",
+          "arrival_time": "04:45",
+          "cost_multiplier": 1.15,
+          "available": true
+        }
+      }
+    },
+    {
+      "from": "TYO",
+      "to": "SIN",
+      "base_cost": 320.0,
+      "distance": 5300.0,
+      "schedule": {
+        "wednesday": {
+          "departure_time": "08:45",
+          "arrival_time": "15:30",
+          "cost_multiplier": 0.95,
+          "available": true
+        },
+        "sunday": {
+          "departure_time": "14:30",
+          "arrival_time": "21:15",
+          "cost_multiplier": 1.0,
+          "available": true
+        }
+      }
     }
   ],
   "config": {
