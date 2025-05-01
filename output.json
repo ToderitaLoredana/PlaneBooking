@@ -1,21 +1,30 @@
 {
 	"journey":	{
-		"origin":	"NYC",
-		"destination":	"LON",
-		"departure_day":	"08:00",
-		"departure_time":	"08:00",
+		"origin":	"TYO",
+		"destination":	"DXB",
+		"departure_day":	"tuesday",
+		"departure_time":	"00:08",
 		"optimization":	"cheapest",
-		"total_cost":	405,
-		"total_duration":	720,
+		"total_cost":	703,
+		"total_duration":	675,
 		"segments":	[{
-				"from":	"NYC",
-				"to":	"LON",
-				"day":	"tuesday",
-				"departure_time":	"10:30",
-				"arrival_time":	"22:30",
-				"duration":	720,
-				"cost":	405,
-				"distance":	5567
+				"from":	"TYO",
+				"to":	"SIN",
+				"day":	"wednesday",
+				"departure_time":	"08:45",
+				"arrival_time":	"15:30",
+				"duration":	405,
+				"cost":	304,
+				"distance":	5300
+			}, {
+				"from":	"SIN",
+				"to":	"DXB",
+				"day":	"wednesday",
+				"departure_time":	"23:15",
+				"arrival_time":	"03:45",
+				"duration":	270,
+				"cost":	399,
+				"distance":	5840
 			}]
 	}
 }
