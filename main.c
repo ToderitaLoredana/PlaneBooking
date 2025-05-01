@@ -1,9 +1,10 @@
 /**
- * Air Travel Planning System using Modified A* Algorithm
- * 
- * This program implements a modified A* algorithm for planning optimal air travel routes,
- * considering both time and cost factors. It reads flight data from a JSON file,
- * calculates the best route, and outputs the results to another JSON file.
+ * Enhanced Air Travel Planning System with JSON compatibility
+ * Improvements:
+ * 1. Robust error handling for JSON parsing
+ * 2. Efficient priority queue (min-heap)
+ * 3. Validation for airport codes and flight data
+ * 4. Clear error messages
  */
 
  #include <stdio.h>
@@ -12,141 +13,149 @@
  #include <stdbool.h>
  #include <float.h>
  #include <math.h>
-
-                                                                                                                                                                                               
- // Include JSON parsing library
+ #include <time.h>
+ #include <ctype.h>
  #include "cJSON/cJSON.h"
  
+ /* Constants */
  #define MAX_AIRPORTS 100
- #define MAX_FLIGHTS 500
+ #define MAX_FLIGHTS 1000
  #define MAX_PATH 50
  #define INFINITY_COST 999999.0
+ #define MAX_QUEUE_SIZE 10000
+ #define MAX_DAY_LENGTH 10
+ #define MAX_TIME_LENGTH 6
  
- // Structure to represent an airport
+ /* Data Structures */
+ typedef enum {
+     CHEAPEST,
+     FASTEST,
+     OPTIMAL
+ } RouteType;
+ 
  typedef struct {
-     char code[4];
+     char code[4];  // IATA code (3 chars + null)
      char name[100];
      double lat;
      double lon;
+     int min_waiting_time;
  } Airport;
  
- // Structure to represent a flight
  typedef struct {
      char from[4];
      char to[4];
-     int departure_time; // minutes since midnight
-     int arrival_time;   // minutes since midnight
-     int duration;       // in minutes
-     double cost;        // in currency units
-     double distance;    // in km
- } Flight;
+     int departure_time;
+     int arrival_time;
+     int duration;
+     double cost;
+     double distance;
+     char day_of_week[MAX_DAY_LENGTH];
+     bool available;
+ } ScheduledFlight;
  
- // Structure for nodes in the A* algorithm
  typedef struct Node {
      int airport_index;
-     double g_cost;      // Cost to reach this node from start
-     double h_cost;      // Heuristic estimate to goal
-     double f_cost;      // Total cost (g_cost + h_cost)
-     int parent_index;   // Index of the parent node
-     int flight_index;   // Index of the flight used to reach this node
-     int arrival_time;   // Arrival time at this node (minutes since midnight)
-     struct Node* next;  // For priority queue
+     double g_cost;
+     double h_cost;
+     double f_cost;
+     int parent_index;
+     int flight_index;
+     int arrival_time;
+     char arrival_day[MAX_DAY_LENGTH];
  } Node;
  
- // Global variables
+ /* Min-Heap Priority Queue */
+ typedef struct {
+     Node* nodes[MAX_QUEUE_SIZE];
+     int size;
+ } PriorityQueue;
+ 
+ /* Global Variables */
  Airport airports[MAX_AIRPORTS];
- Flight flights[MAX_FLIGHTS];
+ ScheduledFlight flights[MAX_FLIGHTS];
  int num_airports = 0;
  int num_flights = 0;
- int connection_time_required = 60; // Default minimum connection time in minutes
+ int connection_time_required = 60;
  
- // Function to calculate distance between two airports using Haversine formula
- double calculate_distance(double lat1, double lon1, double lat2, double lon2) {
-     double earth_radius = 6371.0; // km
-     double lat1_rad = lat1 * 3.14 / 180.0;
-     double lat2_rad = lat2 * 3.14 / 180.0;
-     double delta_lat = (lat2 - lat1) * 3.14 / 180.0;
-     double delta_lon = (lon2 - lon1) * 3.14 / 180.0;
-     
-     double a = sin(delta_lat/2) * sin(delta_lat/2) +
-                cos(lat1_rad) * cos(lat2_rad) * 
-                sin(delta_lon/2) * sin(delta_lon/2);
-     double c = 2 * atan2(sqrt(a), sqrt(1-a));
-     
-     return earth_radius * c;
+ const char* days_of_week[] = {
+     "monday", "tuesday", "wednesday", "thursday", 
+     "friday", "saturday", "sunday"
+ };
+ 
+ /* Priority Queue Implementation (Min-Heap) */
+ void pq_init(PriorityQueue* q) {
+     q->size = 0;
  }
  
- // Find airport index by code
- int find_airport_index(const char* code) {
-     for (int i = 0; i < num_airports; i++) {
-         if (strcmp(airports[i].code, code) == 0) {
-             return i;
-         }
-     }
-     return -1;
+ void pq_swap(PriorityQueue* q, int i, int j) {
+     Node* temp = q->nodes[i];
+     q->nodes[i] = q->nodes[j];
+     q->nodes[j] = temp;
  }
  
- // Convert time string "HH:MM" to minutes since midnight
- int time_to_minutes(const char* time_str) {
-     int hours, minutes;
-     sscanf(time_str, "%d:%d", &hours, &minutes);
-     return hours * 60 + minutes;
- }
- 
- // Convert minutes since midnight to time string "HH:MM"
- void minutes_to_time(int minutes, char* time_str) {
-     int hours = minutes / 60;
-     int mins = minutes % 60;
-     sprintf(time_str, "%02d:%02d", hours, mins);
- }
- 
- // Calculate time difference considering day wrapping
- int time_difference(int time1, int time2) {
-     if (time2 >= time1) {
-         return time2 - time1;
-     } else {
-         // Next day
-         return (24 * 60 - time1) + time2;
-     }
- }
- 
- // Priority queue functions for A* algorithm
- void enqueue(Node** head, Node* new_node) {
-     if (*head == NULL || new_node->f_cost < (*head)->f_cost) {
-         new_node->next = *head;
-         *head = new_node;
+ void pq_enqueue(PriorityQueue* q, Node* node) {
+     if (q->size >= MAX_QUEUE_SIZE) {
+         fprintf(stderr, "Error: Priority queue overflow\n");
          return;
      }
+ 
+     q->nodes[q->size] = node;
+     int current = q->size++;
      
-     Node* current = *head;
-     while (current->next != NULL && current->next->f_cost <= new_node->f_cost) {
-         current = current->next;
+     // Heapify up
+     while (current > 0 && 
+            q->nodes[current]->f_cost < q->nodes[(current-1)/2]->f_cost) {
+         pq_swap(q, current, (current-1)/2);
+         current = (current-1)/2;
      }
-     
-     new_node->next = current->next;
-     current->next = new_node;
  }
  
- Node* dequeue(Node** head) {
-     if (*head == NULL) {
-         return NULL;
+ Node* pq_dequeue(PriorityQueue* q) {
+     if (q->size == 0) return NULL;
+     
+     Node* min = q->nodes[0];
+     q->nodes[0] = q->nodes[--q->size];
+     
+     // Heapify down
+     int current = 0;
+     while (1) {
+         int left = 2*current + 1;
+         int right = 2*current + 2;
+         int smallest = current;
+         
+         if (left < q->size && 
+             q->nodes[left]->f_cost < q->nodes[smallest]->f_cost)
+             smallest = left;
+             
+         if (right < q->size && 
+             q->nodes[right]->f_cost < q->nodes[smallest]->f_cost)
+             smallest = right;
+             
+         if (smallest == current) break;
+             
+         pq_swap(q, current, smallest);
+         current = smallest;
      }
      
-     Node* temp = *head;
-     *head = (*head)->next;
-     temp->next = NULL;
-     return temp;
+     return min;
  }
  
- // Parse the JSON input file
+ /* Enhanced JSON Parsing with Error Checking */
+ bool validate_airport_code(const char* code) {
+     if (strlen(code) != 3) return false;
+     for (int i = 0; i < 3; i++) {
+         if (!isalpha(code[i])) return false;
+     }
+     return true;
+ }
+ 
  bool parse_json_input(const char* filename) {
      FILE* file = fopen(filename, "r");
      if (!file) {
-         fprintf(stderr, "Error opening file: %s\n", filename);
+         fprintf(stderr, "Error: Cannot open file %s\n", filename);
          return false;
      }
-     
-     // Read file into a string
+ 
      fseek(file, 0, SEEK_END);
      long file_size = ftell(file);
      fseek(file, 0, SEEK_SET);
@@ -154,6 +163,7 @@
      char* json_str = (char*)malloc(file_size + 1);
      if (!json_str) {
          fclose(file);
+         fprintf(stderr, "Error: Memory allocation failed\n");
          return false;
      }
      
@@ -161,428 +171,329 @@
      json_str[file_size] = '\0';
      fclose(file);
      
-     // Parse JSON
      cJSON* json = cJSON_Parse(json_str);
      free(json_str);
      
      if (!json) {
-         fprintf(stderr, "Error parsing JSON: %s\n", cJSON_GetErrorPtr());
+         fprintf(stderr, "Error: Invalid JSON format\n");
          return false;
      }
-     
-     // Parse airports
+ 
+     /* Parse airports with validation */
      cJSON* airports_json = cJSON_GetObjectItem(json, "airports");
-     if (airports_json) {
-         int size = cJSON_GetArraySize(airports_json);
-         for (int i = 0; i < size && i < MAX_AIRPORTS; i++) {
-             cJSON* airport = cJSON_GetArrayItem(airports_json, i);
-             
-             cJSON* code = cJSON_GetObjectItem(airport, "code");
-             cJSON* name = cJSON_GetObjectItem(airport, "name");
-             cJSON* lat = cJSON_GetObjectItem(airport, "latitude");
-             cJSON* lon = cJSON_GetObjectItem(airport, "longitude");
-             
-             if (code && name && lat && lon) {
-                 strncpy(airports[num_airports].code, code->valuestring, 3);
-                 airports[num_airports].code[3] = '\0';
-                 strncpy(airports[num_airports].name, name->valuestring, 99);
-                 airports[num_airports].name[99] = '\0';
-                 airports[num_airports].lat = lat->valuedouble;
-                 airports[num_airports].lon = lon->valuedouble;
-                 num_airports++;
-             }
-         }
+     if (!airports_json) {
+         fprintf(stderr, "Error: Missing 'airports' in JSON\n");
+         cJSON_Delete(json);
+         return false;
      }
-     
-     // Parse flights
+ 
+     int airport_count = cJSON_GetArraySize(airports_json);
+     for (int i = 0; i < airport_count && num_airports < MAX_AIRPORTS; i++) {
+         cJSON* airport = cJSON_GetArrayItem(airports_json, i);
+         
+         cJSON* code = cJSON_GetObjectItem(airport, "code");
+         cJSON* name = cJSON_GetObjectItem(airport, "name");
+         cJSON* lat = cJSON_GetObjectItem(airport, "latitude");
+         cJSON* lon = cJSON_GetObjectItem(airport, "longitude");
+         
+         if (!code || !name || !lat || !lon) {
+             fprintf(stderr, "Warning: Incomplete airport data at index %d\n", i);
+             continue;
+         }
+ 
+         if (!validate_airport_code(code->valuestring)) {
+             fprintf(stderr, "Warning: Invalid airport code '%s'\n", code->valuestring);
+             continue;
+         }
+ 
+         strncpy(airports[num_airports].code, code->valuestring, 3);
+         airports[num_airports].code[3] = '\0';
+         strncpy(airports[num_airports].name, name->valuestring, 99);
+         airports[num_airports].name[99] = '\0';
+         airports[num_airports].lat = lat->valuedouble;
+         airports[num_airports].lon = lon->valuedouble;
+         
+         cJSON* min_wait = cJSON_GetObjectItem(airport, "min_waiting_time");
+         airports[num_airports].min_waiting_time = min_wait ? min_wait->valueint : connection_time_required;
+         
+         num_airports++;
+     }
+ 
+     /* Parse flights with validation */
      cJSON* flights_json = cJSON_GetObjectItem(json, "flights");
-     if (flights_json) {
-         int size = cJSON_GetArraySize(flights_json);
-         for (int i = 0; i < size && i < MAX_FLIGHTS; i++) {
-             cJSON* flight = cJSON_GetArrayItem(flights_json, i);
+     if (!flights_json) {
+         fprintf(stderr, "Error: Missing 'flights' in JSON\n");
+         cJSON_Delete(json);
+         return false;
+     }
+ 
+     int flight_count = cJSON_GetArraySize(flights_json);
+     for (int i = 0; i < flight_count && num_flights < MAX_FLIGHTS; i++) {
+         cJSON* flight_info = cJSON_GetArrayItem(flights_json, i);
+         
+         cJSON* from = cJSON_GetObjectItem(flight_info, "from");
+         cJSON* to = cJSON_GetObjectItem(flight_info, "to");
+         cJSON* base_cost = cJSON_GetObjectItem(flight_info, "base_cost");
+         cJSON* schedule = cJSON_GetObjectItem(flight_info, "schedule");
+         
+         if (!from || !to || !base_cost || !schedule) {
+             fprintf(stderr, "Warning: Incomplete flight data at index %d\n", i);
+             continue;
+         }
+ 
+         if (!validate_airport_code(from->valuestring) || !validate_airport_code(to->valuestring)) {
+             fprintf(stderr, "Warning: Invalid airport codes in flight %d\n", i);
+             continue;
+         }
+ 
+         /* Process schedule for each day */
+         for (int day = 0; day < 7; day++) {
+             cJSON* day_schedule = cJSON_GetObjectItem(schedule, days_of_week[day]);
+             if (!day_schedule) continue;
              
-             cJSON* from = cJSON_GetObjectItem(flight, "from");
-             cJSON* to = cJSON_GetObjectItem(flight, "to");
-             cJSON* departure = cJSON_GetObjectItem(flight, "departure_time");
-             cJSON* arrival = cJSON_GetObjectItem(flight, "arrival_time");
-             cJSON* cost = cJSON_GetObjectItem(flight, "cost");
-             cJSON* distance = cJSON_GetObjectItem(flight, "distance");
+             cJSON* departure = cJSON_GetObjectItem(day_schedule, "departure_time");
+             cJSON* arrival = cJSON_GetObjectItem(day_schedule, "arrival_time");
+             cJSON* cost_multiplier = cJSON_GetObjectItem(day_schedule, "cost_multiplier");
+             cJSON* available = cJSON_GetObjectItem(day_schedule, "available");
              
-             if (from && to && departure && arrival && cost) {
-                 strncpy(flights[num_flights].from, from->valuestring, 3);
-                 flights[num_flights].from[3] = '\0';
+             if (!departure || !arrival || !cost_multiplier || !available) {
+                 fprintf(stderr, "Warning: Incomplete schedule for %s\n", days_of_week[day]);
+                 continue;
+             }
+ 
+             if (available->valueint || available->type == cJSON_True) {
+                 ScheduledFlight* f = &flights[num_flights];
                  
-                 strncpy(flights[num_flights].to, to->valuestring, 3);
-                 flights[num_flights].to[3] = '\0';
+                 strncpy(f->from, from->valuestring, 3);
+                 f->from[3] = '\0';
+                 strncpy(f->to, to->valuestring, 3);
+                 f->to[3] = '\0';
                  
-                 flights[num_flights].departure_time = time_to_minutes(departure->valuestring);
-                 flights[num_flights].arrival_time = time_to_minutes(arrival->valuestring);
-                 flights[num_flights].duration = time_difference(
-                     flights[num_flights].departure_time, 
-                     flights[num_flights].arrival_time
-                 );
-                 flights[num_flights].cost = cost->valuedouble;
+                 f->departure_time = time_to_minutes(departure->valuestring);
+                 f->arrival_time = time_to_minutes(arrival->valuestring);
+                 f->duration = time_difference(f->departure_time, f->arrival_time);
+                 f->cost = base_cost->valuedouble * cost_multiplier->valuedouble;
+                 strncpy(f->day_of_week, days_of_week[day], MAX_DAY_LENGTH-1);
+                 f->available = true;
                  
+                 cJSON* distance = cJSON_GetObjectItem(flight_info, "distance");
                  if (distance) {
-                     flights[num_flights].distance = distance->valuedouble;
+                     f->distance = distance->valuedouble;
                  } else {
                      // Calculate distance if not provided
-                     int from_idx = find_airport_index(flights[num_flights].from);
-                     int to_idx = find_airport_index(flights[num_flights].to);
+                     int from_idx = find_airport_index(f->from);
+                     int to_idx = find_airport_index(f->to);
                      
                      if (from_idx >= 0 && to_idx >= 0) {
-                         flights[num_flights].distance = calculate_distance(
+                         f->distance = calculate_distance(
                              airports[from_idx].lat, airports[from_idx].lon,
                              airports[to_idx].lat, airports[to_idx].lon
                          );
                      } else {
-                         flights[num_flights].distance = 0;
+                         f->distance = 0;
+                         fprintf(stderr, "Warning: Couldn't calculate distance for flight %d\n", num_flights);
                      }
                  }
                  
                  num_flights++;
+                 if (num_flights >= MAX_FLIGHTS) break;
              }
          }
      }
-     
-     // Parse configuration
+ 
+     /* Parse configuration */
      cJSON* config = cJSON_GetObjectItem(json, "config");
      if (config) {
          cJSON* conn_time = cJSON_GetObjectItem(config, "min_connection_time");
-         if (conn_time) {
-             connection_time_required = conn_time->valueint;
-         }
+         if (conn_time) connection_time_required = conn_time->valueint;
      }
-     
+ 
      cJSON_Delete(json);
-     return (num_airports > 0 && num_flights > 0);
- }
- 
- // Check if an airport is already in the closed set
- bool in_closed_set(bool* closed_set, int airport_index) {
-     return closed_set[airport_index];
- }
- 
- // Check if there's a flight connection possible
- bool is_connection_possible(int arrival_time, int next_departure_time) {
-     int wait_time = time_difference(arrival_time, next_departure_time);
-     return wait_time >= connection_time_required;
- }
- 
- // Heuristic function for A* algorithm (based on distance or average cost per km)
- double heuristic(int current_index, int goal_index, double avg_cost_per_km) {
-     // Use straight-line distance as heuristic
-     if (current_index >= 0 && goal_index >= 0) {
-         double distance = calculate_distance(
-             airports[current_index].lat, airports[current_index].lon,
-             airports[goal_index].lat, airports[goal_index].lon
-         );
-         
-         // Return estimated cost based on average cost per kilometer
-         return distance * avg_cost_per_km;
+     
+     if (num_airports == 0 || num_flights == 0) {
+         fprintf(stderr, "Error: No valid airports or flights found\n");
+         return false;
      }
      
-     return 0.0;
+     return true;
  }
  
- // Calculate average cost per km from all flights
- double calculate_avg_cost_per_km() {
-     double total_cost = 0.0;
-     double total_distance = 0.0;
-     
-     for (int i = 0; i < num_flights; i++) {
-         if (flights[i].distance > 0) {
-             total_cost += flights[i].cost;
-             total_distance += flights[i].distance;
-         }
-     }
-     
-     return (total_distance > 0) ? (total_cost / total_distance) : 1.0;
- }
- 
- // Modified A* algorithm for flight planning
+ /* Main A* Algorithm with Enhanced Priority Queue */
  bool find_optimal_path(const char* start_code, const char* goal_code, 
-                        int departure_time, int* path, int* path_size) {
+                       const char* start_day, int departure_time, 
+                       RouteType route_type, int* path, int* path_size) {
      int start_index = find_airport_index(start_code);
      int goal_index = find_airport_index(goal_code);
      
      if (start_index < 0 || goal_index < 0) {
-         fprintf(stderr, "Invalid airport codes\n");
+         fprintf(stderr, "Error: Invalid airport codes (%s or %s not found)\n", 
+                 start_code, goal_code);
          return false;
      }
-     
-     // Calculate average cost per km for heuristic
-     double avg_cost_per_km = calculate_avg_cost_per_km();
-     
-     // Initialize data structures for A*
+ 
+     /* Initialize data structures */
      bool* closed_set = (bool*)calloc(num_airports, sizeof(bool));
-     Node* open_set = NULL;
+     PriorityQueue open_set;
+     pq_init(&open_set);
      
-     // Create start node and add to open set
-     Node* start_node = (Node*)malloc(sizeof(Node));
-     start_node->airport_index = start_index;
-     start_node->g_cost = 0.0;
-     start_node->h_cost = heuristic(start_index, goal_index, avg_cost_per_km);
-     start_node->f_cost = start_node->g_cost + start_node->h_cost;
-     start_node->parent_index = -1;
-     start_node->flight_index = -1;
-     start_node->arrival_time = departure_time;
-     start_node->next = NULL;
-     
-     enqueue(&open_set, start_node);
-     
-     // Keep track of best path to each airport
+     /* Track best paths */
      double* best_cost = (double*)malloc(num_airports * sizeof(double));
      int* best_parent = (int*)malloc(num_airports * sizeof(int));
      int* best_flight = (int*)malloc(num_airports * sizeof(int));
-     int* best_arrival = (int*)malloc(num_airports * sizeof(int));
+     int* best_arrival_time = (int*)malloc(num_airports * sizeof(int));
+     char** best_arrival_day = (char**)malloc(num_airports * sizeof(char*));
      
      for (int i = 0; i < num_airports; i++) {
          best_cost[i] = INFINITY_COST;
          best_parent[i] = -1;
          best_flight[i] = -1;
-         best_arrival[i] = -1;
+         best_arrival_time[i] = -1;
+         best_arrival_day[i] = (char*)malloc(MAX_DAY_LENGTH * sizeof(char));
+         strcpy(best_arrival_day[i], "");
      }
      
+     /* Create and enqueue start node */
+     Node* start_node = (Node*)malloc(sizeof(Node));
+     start_node->airport_index = start_index;
+     start_node->g_cost = 0.0;
+     start_node->h_cost = heuristic(start_index, goal_index, route_type);
+     start_node->f_cost = start_node->g_cost + start_node->h_cost;
+     start_node->parent_index = -1;
+     start_node->flight_index = -1;
+     start_node->arrival_time = departure_time;
+     strncpy(start_node->arrival_day, start_day, MAX_DAY_LENGTH-1);
+     
      best_cost[start_index] = 0.0;
-     best_arrival[start_index] = departure_time;
+     best_arrival_time[start_index] = departure_time;
+     strcpy(best_arrival_day[start_index], start_day);
+     
+     pq_enqueue(&open_set, start_node);
      
      bool path_found = false;
+     int expanded_nodes = 0;
      
-     // A* main loop
-     while (open_set != NULL) {
-         Node* current = dequeue(&open_set);
+     /* Main A* loop */
+     while (open_set.size > 0 && expanded_nodes < 10000) {
+         Node* current = pq_dequeue(&open_set);
+         expanded_nodes++;
          
-         // Goal check
          if (current->airport_index == goal_index) {
-             path_found = true;
-             
-             // Reconstruct path
+             /* Reconstruct path */
              int current_airport = goal_index;
              int index = 0;
              
-             // Trace back the path
-             while (current_airport != start_index) {
+             while (current_airport != start_index && index < MAX_PATH) {
                  path[index++] = best_flight[current_airport];
                  current_airport = best_parent[current_airport];
-                 
-                 if (index >= MAX_PATH || current_airport < 0) {
-                     fprintf(stderr, "Path reconstruction error\n");
-                     path_found = false;
-                     break;
+             }
+             
+             if (current_airport == start_index) {
+                 /* Reverse the path */
+                 for (int i = 0; i < index / 2; i++) {
+                     int temp = path[i];
+                     path[i] = path[index - i - 1];
+                     path[index - i - 1] = temp;
                  }
+                 *path_size = index;
+                 path_found = true;
+             } else {
+                 fprintf(stderr, "Error: Path reconstruction failed\n");
              }
              
-             // Reverse the path
-             for (int i = 0; i < index / 2; i++) {
-                 int temp = path[i];
-                 path[i] = path[index - i - 1];
-                 path[index - i - 1] = temp;
-             }
-             
-             *path_size = index;
+             free(current);
              break;
          }
          
-         // Mark as visited
+         if (closed_set[current->airport_index]) {
+             free(current);
+             continue;
+         }
+         
          closed_set[current->airport_index] = true;
          
-         // Check all possible flights from current airport
+         /* Explore neighbors */
          for (int i = 0; i < num_flights; i++) {
-             if (strcmp(flights[i].from, airports[current->airport_index].code) == 0) {
-                 int next_index = find_airport_index(flights[i].to);
+             if (strcmp(flights[i].from, airports[current->airport_index].code) != 0)
+                 continue;
                  
-                 // Skip if already in closed set
-                 if (next_index < 0 || in_closed_set(closed_set, next_index)) {
-                     continue;
+             int next_index = find_airport_index(flights[i].to);
+             if (next_index < 0 || closed_set[next_index])
+                 continue;
+                 
+             /* Check connection feasibility */
+             int min_connection = airports[current->airport_index].min_waiting_time;
+             if (!is_connection_possible(current->arrival_time, flights[i].departure_time,
+                                       current->arrival_day, flights[i].day_of_week,
+                                       min_connection))
+                 continue;
+                 
+             /* Calculate costs */
+             double route_cost = calculate_route_cost(
+                 route_type, 
+                 flights[i].cost, 
+                 flights[i].duration + calculate_wait_time(
+                     current->arrival_time, 
+                     current->arrival_day,
+                     flights[i].departure_time,
+                     flights[i].day_of_week
+                 ),
+                 flights[i].distance
+             );
+             
+             double total_cost = current->g_cost + route_cost;
+             
+             if (total_cost < best_cost[next_index]) {
+                 best_cost[next_index] = total_cost;
+                 best_parent[next_index] = current->airport_index;
+                 best_flight[next_index] = i;
+                 best_arrival_time[next_index] = flights[i].arrival_time;
+                 
+                 /* Calculate arrival day */
+                 if (flights[i].arrival_time < flights[i].departure_time) {
+                     get_next_day(flights[i].day_of_week, best_arrival_day[next_index]);
+                 } else {
+                     strcpy(best_arrival_day[next_index], flights[i].day_of_week);
                  }
                  
-                 // Check if connection is possible (enough time between arrival and departure)
-                 if (!is_connection_possible(current->arrival_time, flights[i].departure_time)) {
-                     continue;
-                 }
+                 /* Create and enqueue neighbor node */
+                 Node* neighbor = (Node*)malloc(sizeof(Node));
+                 neighbor->airport_index = next_index;
+                 neighbor->g_cost = total_cost;
+                 neighbor->h_cost = heuristic(next_index, goal_index, route_type);
+                 neighbor->f_cost = neighbor->g_cost + neighbor->h_cost;
+                 neighbor->parent_index = current->airport_index;
+                 neighbor->flight_index = i;
+                 neighbor->arrival_time = flights[i].arrival_time;
+                 strcpy(neighbor->arrival_day, best_arrival_day[next_index]);
                  
-                 // Calculate waiting time at airport
-                 int wait_time = time_difference(current->arrival_time, flights[i].departure_time);
-                 
-                 // Calculate total cost (combines time and financial cost)
-                 // You can adjust this formula based on preferences (time vs. money)
-                 double time_cost_factor = 0.1;  // Cost unit per minute
-                 double total_cost = current->g_cost + 
-                                     flights[i].cost + 
-                                     (flights[i].duration + wait_time) * time_cost_factor;
-                 
-                 // If this path is better
-                 if (total_cost < best_cost[next_index]) {
-                     best_cost[next_index] = total_cost;
-                     best_parent[next_index] = current->airport_index;
-                     best_flight[next_index] = i;
-                     best_arrival[next_index] = flights[i].arrival_time;
-                     
-                     // Create and add new node to open set
-                     Node* neighbor = (Node*)malloc(sizeof(Node));
-                     neighbor->airport_index = next_index;
-                     neighbor->g_cost = total_cost;
-                     neighbor->h_cost = heuristic(next_index, goal_index, avg_cost_per_km);
-                     neighbor->f_cost = neighbor->g_cost + neighbor->h_cost;
-                     neighbor->parent_index = current->airport_index;
-                     neighbor->flight_index = i;
-                     neighbor->arrival_time = flights[i].arrival_time;
-                     neighbor->next = NULL;
-                     
-                     enqueue(&open_set, neighbor);
-                 }
+                 pq_enqueue(&open_set, neighbor);
              }
          }
          
          free(current);
      }
      
-     // Clean up
-     while (open_set != NULL) {
-         Node* temp = dequeue(&open_set);
-         free(temp);
+     /* Cleanup */
+     while (open_set.size > 0) {
+         free(pq_dequeue(&open_set));
      }
      
      free(closed_set);
      free(best_cost);
      free(best_parent);
      free(best_flight);
-     free(best_arrival);
+     free(best_arrival_time);
+     
+     for (int i = 0; i < num_airports; i++) {
+         free(best_arrival_day[i]);
+     }
+     free(best_arrival_day);
+     
+     if (!path_found) {
+         fprintf(stderr, "Error: No viable path found from %s to %s\n", 
+                 start_code, goal_code);
+     }
      
      return path_found;
  }
  
- // Write results to output JSON file
- bool write_json_output(const char* filename, int* path, int path_size, 
-                        const char* start_code, const char* goal_code, int departure_time) {
-     cJSON* root = cJSON_CreateObject();
-     cJSON* journey = cJSON_CreateObject();
-     cJSON* segments = cJSON_CreateArray();
-     
-     cJSON_AddItemToObject(root, "journey", journey);
-     cJSON_AddStringToObject(journey, "origin", start_code);
-     cJSON_AddStringToObject(journey, "destination", goal_code);
-     
-     char time_str[6];
-     minutes_to_time(departure_time, time_str);
-     cJSON_AddStringToObject(journey, "departure_time", time_str);
-     
-     double total_cost = 0.0;
-     int total_duration = 0;
-     int total_wait_time = 0;
-     int arrival_time = departure_time;
-     
-     for (int i = 0; i < path_size; i++) {
-         int flight_idx = path[i];
-         Flight flight = flights[flight_idx];
-         
-         // Calculate waiting time
-         int wait_time = 0;
-         if (i == 0) {
-             wait_time = time_difference(departure_time, flight.departure_time);
-         } else {
-             wait_time = time_difference(arrival_time, flight.departure_time);
-         }
-         
-         cJSON* segment = cJSON_CreateObject();
-         cJSON_AddStringToObject(segment, "from", flight.from);
-         cJSON_AddStringToObject(segment, "to", flight.to);
-         
-         minutes_to_time(flight.departure_time, time_str);
-         cJSON_AddStringToObject(segment, "departure_time", time_str);
-         
-         minutes_to_time(flight.arrival_time, time_str);
-         cJSON_AddStringToObject(segment, "arrival_time", time_str);
-         
-         cJSON_AddNumberToObject(segment, "duration", flight.duration);
-         cJSON_AddNumberToObject(segment, "cost", flight.cost);
-         cJSON_AddNumberToObject(segment, "distance", flight.distance);
-         
-         if (i > 0) {
-             cJSON_AddNumberToObject(segment, "connection_wait_time", wait_time);
-         }
-         
-         cJSON_AddItemToArray(segments, segment);
-         
-         // Update totals
-         total_cost += flight.cost;
-         total_duration += flight.duration;
-         if (i > 0) {
-             total_wait_time += wait_time;
-         }
-         
-         arrival_time = flight.arrival_time;
-     }
-     
-     cJSON_AddItemToObject(journey, "segments", segments);
-     cJSON_AddNumberToObject(journey, "total_cost", total_cost);
-     cJSON_AddNumberToObject(journey, "total_flight_duration", total_duration);
-     cJSON_AddNumberToObject(journey, "total_connection_wait_time", total_wait_time);
-     cJSON_AddNumberToObject(journey, "total_journey_duration", total_duration + total_wait_time);
-     
-     minutes_to_time(arrival_time, time_str);
-     cJSON_AddStringToObject(journey, "arrival_time", time_str);
-     
-     // Write JSON to file
-     char* json_str = cJSON_Print(root);
-     FILE* file = fopen(filename, "w");
-     if (!file) {
-         fprintf(stderr, "Error opening output file: %s\n", filename);
-         cJSON_Delete(root);
-         free(json_str);
-         return false;
-     }
-     
-     fputs(json_str, file);
-     fclose(file);
-     
-     cJSON_Delete(root);
-     free(json_str);
-     return true;
- }
- 
- int main(int argc, char* argv[]) {
-     if (argc < 5) {
-         printf("Usage: %s <input_json> <output_json> <start_airport> <goal_airport> [departure_time]\n", argv[0]);
-         return 1;
-     }
-     
-     const char* input_file = argv[1];
-     const char* output_file = argv[2];
-     const char* start_airport = argv[3];
-     const char* goal_airport = argv[4];
-     
-     int departure_time = 480; // Default: 08:00
-     if (argc > 5) {
-         departure_time = time_to_minutes(argv[5]);
-     }
-     
-     // Parse input JSON
-     if (!parse_json_input(input_file)) {
-         fprintf(stderr, "Failed to parse input file\n");
-         return 1;
-     }
-     
-     printf("Loaded %d airports and %d flights\n", num_airports, num_flights);
-     
-     // Find optimal path using A*
-     int path[MAX_PATH];
-     int path_size = 0;
-     
-     if (!find_optimal_path(start_airport, goal_airport, departure_time, path, &path_size)) {
-         fprintf(stderr, "No viable path found from %s to %s\n", start_airport, goal_airport);
-         return 1;
-     }
-     
-     printf("Found optimal path with %d flights\n", path_size);
-     
-     // Write results to output JSON
-     if (!write_json_output(output_file, path, path_size, start_airport, goal_airport, departure_time)) {
-         fprintf(stderr, "Failed to write output file\n");
-         return 1;
-     }
-     
-     printf("Results written to %s\n", output_file);
-     return 0;
- }
