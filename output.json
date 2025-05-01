@@ -1,21 +1,30 @@
 {
 	"journey":	{
-		"origin":	"NYC",
-		"destination":	"TYO",
-		"departure_time":	"08:00",
+		"origin":	"TYO",
+		"destination":	"DXB",
+		"departure_day":	"tuesday",
+		"departure_time":	"00:08",
+		"optimization":	"cheapest",
+		"total_cost":	703,
+		"total_duration":	675,
 		"segments":	[{
-				"from":	"NYC",
-				"to":	"TYO",
-				"departure_time":	"13:30",
-				"arrival_time":	"16:45",
-				"duration":	195,
-				"cost":	880,
-				"distance":	10838
-			}],
-		"total_cost":	880,
-		"total_flight_duration":	195,
-		"total_connection_wait_time":	0,
-		"total_journey_duration":	195,
-		"arrival_time":	"16:45"
+				"from":	"TYO",
+				"to":	"SIN",
+				"day":	"wednesday",
+				"departure_time":	"08:45",
+				"arrival_time":	"15:30",
+				"duration":	405,
+				"cost":	304,
+				"distance":	5300
+			}, {
+				"from":	"SIN",
+				"to":	"DXB",
+				"day":	"wednesday",
+				"departure_time":	"23:15",
+				"arrival_time":	"03:45",
+				"duration":	270,
+				"cost":	399,
+				"distance":	5840
+			}]
 	}
 }

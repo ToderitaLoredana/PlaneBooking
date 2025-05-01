@@ -12,6 +12,7 @@
  #include <string.h>
  #include <stdbool.h>
  #include <float.h>
+ #define _USE_MATH_DEFINES
  #include <math.h>
  #include <time.h>
  #include <ctype.h>
@@ -82,6 +83,20 @@
      "friday", "saturday", "sunday"
  };
  
+/* Function prototypes */
+int time_to_minutes(const char* time_str);
+int time_difference(int time1, int time2);
+int find_airport_index(const char* code);
+double calculate_distance(double lat1, double lon1, double lat2, double lon2);
+double heuristic(int current_index, int goal_index, RouteType route_type);
+bool is_connection_possible(int arrival_time, int next_departure_time,
+                          const char* arrival_day, const char* departure_day,
+                          int min_connection_time);
+double calculate_route_cost(RouteType route_type, double cost, int duration, double distance);
+int calculate_wait_time(int arrival_time, const char* arrival_day,
+                      int next_departure_time, const char* departure_day);
+void get_next_day(const char* current_day, char* next_day);
+
  /* Priority Queue Implementation (Min-Heap) */
  void pq_init(PriorityQueue* q) {
      q->size = 0;
@@ -139,6 +154,10 @@
      
      return min;
  }
+
+ void minutes_to_time(int minutes, char* time_str) {
+    sprintf(time_str, "%02d:%02d", minutes / 60, minutes % 60);
+}
  
  /* Enhanced JSON Parsing with Error Checking */
  bool validate_airport_code(const char* code) {
@@ -496,4 +515,238 @@
      
      return path_found;
  }
+
+ /* Time conversion functions */
+int time_to_minutes(const char* time_str) {
+    int hours, minutes;
+    if (sscanf(time_str, "%d:%d", &hours, &minutes) != 2) {
+        fprintf(stderr, "Invalid time format: %s\n", time_str);
+        return -1;
+    }
+    return hours * 60 + minutes;
+}
+
+int time_difference(int time1, int time2) {
+    if (time2 >= time1) return time2 - time1;
+    return (24 * 60 - time1) + time2;
+}
+
+/* Distance calculation */
+double calculate_distance(double lat1, double lon1, double lat2, double lon2) {
+    double dLat = (lat2 - lat1) * M_PI / 180.0;
+    double dLon = (lon2 - lon1) * M_PI / 180.0;
+    
+    double a = sin(dLat/2) * sin(dLat/2) +
+               cos(lat1 * M_PI / 180.0) * cos(lat2 * M_PI / 180.0) *
+               sin(dLon/2) * sin(dLon/2);
+    
+    return 6371 * 2 * atan2(sqrt(a), sqrt(1-a));
+}
+
+/* A* heuristic */
+double heuristic(int current_index, int goal_index, RouteType route_type) {
+    double distance = calculate_distance(
+        airports[current_index].lat, airports[current_index].lon,
+        airports[goal_index].lat, airports[goal_index].lon
+    );
+    
+    switch (route_type) {
+        case CHEAPEST: return distance * 0.1;
+        case FASTEST: return distance / 800;
+        case OPTIMAL: return distance * 0.05;
+        default: return distance;
+    }
+}
+
+/* Connection validation */
+bool is_connection_possible(int arrival_time, int next_departure_time,
+                          const char* arrival_day, const char* departure_day,
+                          int min_connection_time) {
+    if (strcmp(arrival_day, departure_day) == 0) {
+        return (next_departure_time - arrival_time) >= min_connection_time;
+    }
+    return true;
+}
+
+/* Wait time calculation */
+int calculate_wait_time(int arrival_time, const char* arrival_day,
+                      int next_departure_time, const char* departure_day) {
+    if (strcmp(arrival_day, departure_day) == 0) {
+        return next_departure_time - arrival_time;
+    }
+    return (24 * 60 - arrival_time) + next_departure_time;
+}
+
+/* Day calculation */
+void get_next_day(const char* current_day, char* next_day) {
+    for (int i = 0; i < 6; i++) {
+        if (strcmp(current_day, days_of_week[i]) == 0) {
+            strcpy(next_day, days_of_week[i+1]);
+            return;
+        }
+    }
+    strcpy(next_day, "monday");
+}
+
+/* JSON Output Function */
+bool write_json_output(const char* filename, int* path, int path_size,
+                      const char* from, const char* to, const char* day,
+                      int departure_time, RouteType route_type) {
+    cJSON* root = cJSON_CreateObject();
+    cJSON* journey = cJSON_CreateObject();
+    cJSON* segments = cJSON_CreateArray();
+
+    // Add basic journey info
+    cJSON_AddStringToObject(journey, "origin", from);
+    cJSON_AddStringToObject(journey, "destination", to);
+    cJSON_AddStringToObject(journey, "departure_day", day);
+    
+    char time_str[6];
+    minutes_to_time(departure_time, time_str);
+    cJSON_AddStringToObject(journey, "departure_time", time_str);
+
+    // Add optimization type
+    const char* type_str = (route_type == CHEAPEST) ? "cheapest" :
+                          (route_type == FASTEST) ? "fastest" : "optimal";
+    cJSON_AddStringToObject(journey, "optimization", type_str);
+
+    // Process each flight segment
+    double total_cost = 0;
+    int total_duration = 0;
+    int current_time = departure_time;
+    char current_day[MAX_DAY_LENGTH];
+    strcpy(current_day, day);
+
+    for (int i = 0; i < path_size; i++) {
+        ScheduledFlight* f = &flights[path[i]];
+        cJSON* segment = cJSON_CreateObject();
+        
+        // Add segment details
+        cJSON_AddStringToObject(segment, "from", f->from);
+        cJSON_AddStringToObject(segment, "to", f->to);
+        cJSON_AddStringToObject(segment, "day", f->day_of_week);
+        
+        minutes_to_time(f->departure_time, time_str);
+        cJSON_AddStringToObject(segment, "departure_time", time_str);
+        
+        minutes_to_time(f->arrival_time, time_str);
+        cJSON_AddStringToObject(segment, "arrival_time", time_str);
+        
+        cJSON_AddNumberToObject(segment, "duration", f->duration);
+        cJSON_AddNumberToObject(segment, "cost", f->cost);
+        cJSON_AddNumberToObject(segment, "distance", f->distance);
+        
+        cJSON_AddItemToArray(segments, segment);
+        
+        // Update totals
+        total_cost += f->cost;
+        total_duration += f->duration;
+    }
+
+    // Add totals and segments
+    cJSON_AddNumberToObject(journey, "total_cost", total_cost);
+    cJSON_AddNumberToObject(journey, "total_duration", total_duration);
+    cJSON_AddItemToObject(journey, "segments", segments);
+    cJSON_AddItemToObject(root, "journey", journey);
+
+    // Write to file
+    char* json_str = cJSON_Print(root);
+    FILE* fp = fopen(filename, "w");
+    if (!fp) {
+        cJSON_Delete(root);
+        free(json_str);
+        return false;
+    }
+    
+    fputs(json_str, fp);
+    fclose(fp);
+    
+    // Cleanup
+    cJSON_Delete(root);
+    free(json_str);
+    return true;
+}
+
+/**
+ * Finds the index of an airport by its IATA code
+ * Returns -1 if not found
+ */
+int find_airport_index(const char* code) {
+    for (int i = 0; i < num_airports; i++) {
+        if (strcmp(airports[i].code, code) == 0) {
+            return i;
+        }
+    }
+    fprintf(stderr, "Airport not found: %s\n", code);
+    return -1;  // Not found
+}
+
+/**
+ * Calculates route cost based on optimization criteria
+ */
+double calculate_route_cost(RouteType route_type, double cost, int duration, double distance) {
+    switch (route_type) {
+        case CHEAPEST:
+            return cost;  // Just the monetary cost
+            
+        case FASTEST:
+            return duration;  // Total time in minutes
+            
+        case OPTIMAL:
+            // Balanced approach: cost + time penalty (0.1 cost units per minute)
+            return cost + (duration * 0.1);
+            
+        default:
+            fprintf(stderr, "Invalid route type\n");
+            return cost;
+    }
+}
+
+ int main(int argc, char* argv[]) {
+    if (argc < 6) {
+        printf("Usage: %s <input.json> <output.json> <from> <to> <day> [departure_time]\n", argv[0]);
+        printf("Example: %s flights.json result.json JFK LAX monday 480\n", argv[0]);
+        return 1;
+    }
+
+    const char* input_file = argv[1];
+    const char* output_file = argv[2];
+    const char* from_airport = argv[3];
+    const char* to_airport = argv[4];
+    const char* day = argv[5];
+    
+    // Default departure time: 08:00 (480 minutes)
+    int departure_time = (argc > 6) ? atoi(argv[6]) : 480; 
+
+    // Load and parse the JSON input file
+    if (!parse_json_input(input_file)) {
+        fprintf(stderr, "Failed to parse input file %s\n", input_file);
+        return 1;
+    }
+
+    printf("Loaded %d airports and %d flights\n", num_airports, num_flights);
+
+    // Find optimal path (using CHEAPEST by default)
+    int path[MAX_PATH];
+    int path_size = 0;
+    RouteType route_type = CHEAPEST; // Can be changed to FASTEST or OPTIMAL
+
+    if (!find_optimal_path(from_airport, to_airport, day, departure_time, 
+                          route_type, path, &path_size)) {
+        fprintf(stderr, "No viable path found from %s to %s\n", from_airport, to_airport);
+        return 1;
+    }
+
+    printf("Found optimal path with %d flight segments\n", path_size);
+
+    // Write results to JSON output file
+    if (!write_json_output(output_file, path, path_size, from_airport, to_airport, 
+                          day, departure_time, route_type)) {
+        fprintf(stderr, "Failed to write output file %s\n", output_file);
+        return 1;
+    }
+
+    printf("Results successfully written to %s\n", output_file);
+    return 0;
+}
  
