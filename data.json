@@ -1,0 +1,425 @@
+{
+    "airports": [
+      {
+        "code": "NYC",
+        "name": "New York",
+        "latitude": 40.7128,
+        "longitude": -74.0060
+      },
+      {
+        "code": "LON",
+        "name": "London",
+        "latitude": 51.5074,
+        "longitude": -0.1278
+      },
+      {
+        "code": "PAR",
+        "name": "Paris",
+        "latitude": 48.8566,
+        "longitude": 2.3522
+      },
+      {
+        "code": "BER",
+        "name": "Berlin",
+        "latitude": 52.5200,
+        "longitude": 13.4050
+      },
+      {
+        "code": "ROM",
+        "name": "Rome",
+        "latitude": 41.9028,
+        "longitude": 12.4964
+      },
+      {
+        "code": "MAD",
+        "name": "Madrid",
+        "latitude": 40.4168,
+        "longitude": -3.7038
+      },
+      {
+        "code": "AMS",
+        "name": "Amsterdam",
+        "latitude": 52.3676,
+        "longitude": 4.9041
+      },
+      {
+        "code": "IST",
+        "name": "Istanbul",
+        "latitude": 41.0082,
+        "longitude": 28.9784
+      },
+      {
+        "code": "DXB",
+        "name": "Dubai",
+        "latitude": 25.2048,
+        "longitude": 55.2708
+      },
+      {
+        "code": "SIN",
+        "name": "Singapore",
+        "latitude": 1.3521,
+        "longitude": 103.8198
+      },
+      {
+        "code": "SYD",
+        "name": "Sydney",
+        "latitude": -33.8688,
+        "longitude": 151.2093
+      },
+      {
+        "code": "TYO",
+        "name": "Tokyo",
+        "latitude": 35.6762,
+        "longitude": 139.6503
+      }
+    ],
+    "flights": [
+      {
+        "from": "NYC",
+        "to": "LON",
+        "departure_time": "08:00",
+        "arrival_time": "20:00",
+        "cost": 450.0,
+        "distance": 5567.0
+      },
+      {
+        "from": "NYC",
+        "to": "PAR",
+        "departure_time": "09:00",
+        "arrival_time": "22:30",
+        "cost": 480.0,
+        "distance": 5844.0
+      },
+      {
+        "from": "LON",
+        "to": "NYC",
+        "departure_time": "10:30",
+        "arrival_time": "13:30",
+        "cost": 470.0,
+        "distance": 5567.0
+      },
+      {
+        "from": "LON",
+        "to": "PAR",
+        "departure_time": "07:00",
+        "arrival_time": "09:15",
+        "cost": 120.0,
+        "distance": 344.0
+      },
+      {
+        "from": "LON",
+        "to": "BER",
+        "departure_time": "08:45",
+        "arrival_time": "11:30",
+        "cost": 150.0,
+        "distance": 932.0
+      },
+      {
+        "from": "LON",
+        "to": "AMS",
+        "departure_time": "10:15",
+        "arrival_time": "12:30",
+        "cost": 110.0,
+        "distance": 358.0
+      },
+      {
+        "from": "PAR",
+        "to": "NYC",
+        "departure_time": "11:00",
+        "arrival_time": "14:30",
+        "cost": 490.0,
+        "distance": 5844.0
+      },
+      {
+        "from": "PAR",
+        "to": "LON",
+        "departure_time": "16:30",
+        "arrival_time": "17:45",
+        "cost": 130.0,
+        "distance": 344.0
+      },
+      {
+        "from": "PAR",
+        "to": "ROM",
+        "departure_time": "13:15",
+        "arrival_time": "15:30",
+        "cost": 180.0,
+        "distance": 1106.0
+      },
+      {
+        "from": "PAR",
+        "to": "MAD",
+        "departure_time": "14:45",
+        "arrival_time": "17:00",
+        "cost": 160.0,
+        "distance": 1054.0
+      },
+      {
+        "from": "BER",
+        "to": "LON",
+        "departure_time": "12:30",
+        "arrival_time": "14:15",
+        "cost": 155.0,
+        "distance": 932.0
+      },
+      {
+        "from": "BER",
+        "to": "PAR",
+        "departure_time": "09:00",
+        "arrival_time": "10:45",
+        "cost": 145.0,
+        "distance": 878.0
+      },
+      {
+        "from": "BER",
+        "to": "IST",
+        "departure_time": "15:20",
+        "arrival_time": "19:30",
+        "cost": 220.0,
+        "distance": 1739.0
+      },
+      {
+        "from": "ROM",
+        "to": "PAR",
+        "departure_time": "09:45",
+        "arrival_time": "12:00",
+        "cost": 175.0,
+        "distance": 1106.0
+      },
+      {
+        "from": "ROM",
+        "to": "MAD",
+        "departure_time": "14:30",
+        "arrival_time": "17:00",
+        "cost": 165.0,
+        "distance": 1361.0
+      },
+      {
+        "from": "ROM",
+        "to": "IST",
+        "departure_time": "13:00",
+        "arrival_time": "16:45",
+        "cost": 210.0,
+        "distance": 1372.0
+      },
+      {
+        "from": "MAD",
+        "to": "LON",
+        "departure_time": "07:30",
+        "arrival_time": "09:15",
+        "cost": 170.0,
+        "distance": 1264.0
+      },
+      {
+        "from": "MAD",
+        "to": "PAR",
+        "departure_time": "10:00",
+        "arrival_time": "12:15",
+        "cost": 155.0,
+        "distance": 1054.0
+      },
+      {
+        "from": "MAD",
+        "to": "ROM",
+        "departure_time": "13:45",
+        "arrival_time": "16:15",
+        "cost": 160.0,
+        "distance": 1361.0
+      },
+      {
+        "from": "AMS",
+        "to": "LON",
+        "departure_time": "15:00",
+        "arrival_time": "15:45",
+        "cost": 105.0,
+        "distance": 358.0
+      },
+      {
+        "from": "AMS",
+        "to": "BER",
+        "departure_time": "08:30",
+        "arrival_time": "10:00",
+        "cost": 135.0,
+        "distance": 577.0
+      },
+      {
+        "from": "AMS",
+        "to": "IST",
+        "departure_time": "11:15",
+        "arrival_time": "15:45",
+        "cost": 230.0,
+        "distance": 2172.0
+      },
+      {
+        "from": "IST",
+        "to": "BER",
+        "departure_time": "06:45",
+        "arrival_time": "09:15",
+        "cost": 215.0,
+        "distance": 1739.0
+      },
+      {
+        "from": "IST",
+        "to": "ROM",
+        "departure_time": "12:30",
+        "arrival_time": "14:15",
+        "cost": 205.0,
+        "distance": 1372.0
+      },
+      {
+        "from": "IST",
+        "to": "DXB",
+        "departure_time": "23:00",
+        "arrival_time": "04:30",
+        "cost": 380.0,
+        "distance": 2989.0
+      },
+      {
+        "from": "DXB",
+        "to": "IST",
+        "departure_time": "02:30",
+        "arrival_time": "06:00",
+        "cost": 385.0,
+        "distance": 2989.0
+      },
+      {
+        "from": "DXB",
+        "to": "SIN",
+        "departure_time": "08:15",
+        "arrival_time": "20:00",
+        "cost": 520.0,
+        "distance": 5841.0
+      },
+      {
+        "from": "DXB",
+        "to": "LON",
+        "departure_time": "14:30",
+        "arrival_time": "18:45",
+        "cost": 430.0,
+        "distance": 5502.0
+      },
+      {
+        "from": "SIN",
+        "to": "DXB",
+        "departure_time": "23:45",
+        "arrival_time": "05:30",
+        "cost": 510.0,
+        "distance": 5841.0
+      },
+      {
+        "from": "SIN",
+        "to": "SYD",
+        "departure_time": "19:30",
+        "arrival_time": "05:45",
+        "cost": 390.0,
+        "distance": 6293.0
+      },
+      {
+        "from": "SIN",
+        "to": "TYO",
+        "departure_time": "09:00",
+        "arrival_time": "17:15",
+        "cost": 440.0,
+        "distance": 5316.0
+      },
+      {
+        "from": "SYD",
+        "to": "SIN",
+        "departure_time": "21:00",
+        "arrival_time": "02:15",
+        "cost": 395.0,
+        "distance": 6293.0
+      },
+      {
+        "from": "SYD",
+        "to": "TYO",
+        "departure_time": "10:30",
+        "arrival_time": "19:45",
+        "cost": 580.0,
+        "distance": 7920.0
+      },
+      {
+        "from": "TYO",
+        "to": "SIN",
+        "departure_time": "00:30",
+        "arrival_time": "06:45",
+        "cost": 450.0,
+        "distance": 5316.0
+      },
+      {
+        "from": "TYO",
+        "to": "SYD",
+        "departure_time": "22:15",
+        "arrival_time": "09:30",
+        "cost": 590.0,
+        "distance": 7920.0
+      },
+      {
+        "from": "TYO",
+        "to": "NYC",
+        "departure_time": "10:00",
+        "arrival_time": "09:30",
+        "cost": 870.0,
+        "distance": 10838.0
+      },
+      {
+        "from": "NYC",
+        "to": "TYO",
+        "departure_time": "13:30",
+        "arrival_time": "16:45",
+        "cost": 880.0,
+        "distance": 10838.0
+      },
+      {
+        "from": "LON",
+        "to": "DXB",
+        "departure_time": "20:15",
+        "arrival_time": "07:30",
+        "cost": 420.0,
+        "distance": 5502.0
+      },
+      {
+        "from": "PAR",
+        "to": "BER",
+        "departure_time": "11:30",
+        "arrival_time": "13:15",
+        "cost": 140.0,
+        "distance": 878.0
+      },
+      {
+        "from": "BER",
+        "to": "AMS",
+        "departure_time": "16:45",
+        "arrival_time": "18:15",
+        "cost": 130.0,
+        "distance": 577.0
+      },
+      {
+        "from": "IST",
+        "to": "AMS",
+        "departure_time": "17:00",
+        "arrival_time": "19:30",
+        "cost": 235.0,
+        "distance": 2172.0
+      },
+      {
+        "from": "TYO",
+        "to": "DXB",
+        "departure_time": "01:15",
+        "arrival_time": "07:45",
+        "cost": 680.0,
+        "distance": 8154.0
+      },
+      {
+        "from": "DXB",
+        "to": "TYO",
+        "departure_time": "10:45",
+        "arrival_time": "01:15",
+        "cost": 690.0,
+        "distance": 8154.0
+      }
+    ],
+    "config": {
+      "min_connection_time": 60
+    }
+}

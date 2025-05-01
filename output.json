@@ -1,0 +1,21 @@
+{
+	"journey":	{
+		"origin":	"NYC",
+		"destination":	"TYO",
+		"departure_time":	"08:00",
+		"segments":	[{
+				"from":	"NYC",
+				"to":	"TYO",
+				"departure_time":	"13:30",
+				"arrival_time":	"16:45",
+				"duration":	195,
+				"cost":	880,
+				"distance":	10838
+			}],
+		"total_cost":	880,
+		"total_flight_duration":	195,
+		"total_connection_wait_time":	0,
+		"total_journey_duration":	195,
+		"arrival_time":	"16:45"
+	}
+}
