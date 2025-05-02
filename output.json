@@ -1,30 +1,86 @@
 {
-	"journey":	{
-		"origin":	"TYO",
-		"destination":	"DXB",
-		"departure_day":	"tuesday",
-		"departure_time":	"00:08",
-		"optimization":	"cheapest",
-		"total_cost":	703,
-		"total_duration":	675,
-		"segments":	[{
-				"from":	"TYO",
-				"to":	"SIN",
-				"day":	"wednesday",
-				"departure_time":	"08:45",
-				"arrival_time":	"15:30",
-				"duration":	405,
-				"cost":	304,
-				"distance":	5300
-			}, {
-				"from":	"SIN",
-				"to":	"DXB",
-				"day":	"wednesday",
-				"departure_time":	"23:15",
-				"arrival_time":	"03:45",
-				"duration":	270,
-				"cost":	399,
-				"distance":	5840
-			}]
+	"origin":	"TYO",
+	"destination":	"DXB",
+	"departure_day":	"tuesday",
+	"departure_time":	"00:08",
+	"journeys":	{
+		"cheapest":	{
+			"total_cost":	703,
+			"total_duration":	675,
+			"segments":	[{
+					"from":	"TYO",
+					"to":	"SIN",
+					"day":	"wednesday",
+					"departure_time":	"08:45",
+					"arrival_time":	"15:30",
+					"duration":	405,
+					"cost":	304,
+					"distance":	5300
+				}, {
+					"from":	"SIN",
+					"to":	"DXB",
+					"day":	"wednesday",
+					"departure_time":	"23:15",
+					"arrival_time":	"03:45",
+					"duration":	270,
+					"cost":	399,
+					"distance":	5840
+				}]
+		},
+		"fastest":	{
+			"total_cost":	1205,
+			"total_duration":	1305,
+			"segments":	[{
+					"from":	"TYO",
+					"to":	"SYD",
+					"day":	"tuesday",
+					"departure_time":	"10:00",
+					"arrival_time":	"20:30",
+					"duration":	630,
+					"cost":	405,
+					"distance":	7820
+				}, {
+					"from":	"SYD",
+					"to":	"SIN",
+					"day":	"monday",
+					"departure_time":	"07:30",
+					"arrival_time":	"14:15",
+					"duration":	405,
+					"cost":	380,
+					"distance":	6300
+				}, {
+					"from":	"SIN",
+					"to":	"DXB",
+					"day":	"sunday",
+					"departure_time":	"09:00",
+					"arrival_time":	"13:30",
+					"duration":	270,
+					"cost":	420,
+					"distance":	5840
+				}]
+		},
+		"optimal":	{
+			"total_cost":	703,
+			"total_duration":	675,
+			"segments":	[{
+					"from":	"TYO",
+					"to":	"SIN",
+					"day":	"wednesday",
+					"departure_time":	"08:45",
+					"arrival_time":	"15:30",
+					"duration":	405,
+					"cost":	304,
+					"distance":	5300
+				}, {
+					"from":	"SIN",
+					"to":	"DXB",
+					"day":	"wednesday",
+					"departure_time":	"23:15",
+					"arrival_time":	"03:45",
+					"duration":	270,
+					"cost":	399,
+					"distance":	5840
+				}]
+		}
 	}
 }

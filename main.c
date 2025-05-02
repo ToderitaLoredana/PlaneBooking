@@ -588,83 +588,166 @@ void get_next_day(const char* current_day, char* next_day) {
     strcpy(next_day, "monday");
 }
 
-/* JSON Output Function */
-bool write_json_output(const char* filename, int* path, int path_size,
-                      const char* from, const char* to, const char* day,
-                      int departure_time, RouteType route_type) {
-    cJSON* root = cJSON_CreateObject();
-    cJSON* journey = cJSON_CreateObject();
-    cJSON* segments = cJSON_CreateArray();
+/**
+ * Modified JSON Output Function to support multiple route options
+ */
+bool write_json_output(const char* filename, 
+    int* cheapest_path, int cheapest_path_size,
+    int* fastest_path, int fastest_path_size,
+    int* optimal_path, int optimal_path_size,
+    const char* from, const char* to, const char* day,
+    int departure_time) {
+cJSON* root = cJSON_CreateObject();
+cJSON* journeys = cJSON_CreateObject();
 
-    // Add basic journey info
-    cJSON_AddStringToObject(journey, "origin", from);
-    cJSON_AddStringToObject(journey, "destination", to);
-    cJSON_AddStringToObject(journey, "departure_day", day);
-    
-    char time_str[6];
-    minutes_to_time(departure_time, time_str);
-    cJSON_AddStringToObject(journey, "departure_time", time_str);
+// Add basic info at the top level
+cJSON_AddStringToObject(root, "origin", from);
+cJSON_AddStringToObject(root, "destination", to);
+cJSON_AddStringToObject(root, "departure_day", day);
 
-    // Add optimization type
-    const char* type_str = (route_type == CHEAPEST) ? "cheapest" :
-                          (route_type == FASTEST) ? "fastest" : "optimal";
-    cJSON_AddStringToObject(journey, "optimization", type_str);
+char time_str[6];
+minutes_to_time(departure_time, time_str);
+cJSON_AddStringToObject(root, "departure_time", time_str);
 
-    // Process each flight segment
-    double total_cost = 0;
-    int total_duration = 0;
-    int current_time = departure_time;
-    char current_day[MAX_DAY_LENGTH];
-    strcpy(current_day, day);
+// Create cheapest journey if available
+if (cheapest_path_size > 0) {
+cJSON* cheapest_journey = cJSON_CreateObject();
+cJSON* cheapest_segments = cJSON_CreateArray();
+double total_cost = 0;
+int total_duration = 0;
 
-    for (int i = 0; i < path_size; i++) {
-        ScheduledFlight* f = &flights[path[i]];
-        cJSON* segment = cJSON_CreateObject();
-        
-        // Add segment details
-        cJSON_AddStringToObject(segment, "from", f->from);
-        cJSON_AddStringToObject(segment, "to", f->to);
-        cJSON_AddStringToObject(segment, "day", f->day_of_week);
-        
-        minutes_to_time(f->departure_time, time_str);
-        cJSON_AddStringToObject(segment, "departure_time", time_str);
-        
-        minutes_to_time(f->arrival_time, time_str);
-        cJSON_AddStringToObject(segment, "arrival_time", time_str);
-        
-        cJSON_AddNumberToObject(segment, "duration", f->duration);
-        cJSON_AddNumberToObject(segment, "cost", f->cost);
-        cJSON_AddNumberToObject(segment, "distance", f->distance);
-        
-        cJSON_AddItemToArray(segments, segment);
-        
-        // Update totals
-        total_cost += f->cost;
-        total_duration += f->duration;
-    }
+for (int i = 0; i < cheapest_path_size; i++) {
+ScheduledFlight* f = &flights[cheapest_path[i]];
+cJSON* segment = cJSON_CreateObject();
 
-    // Add totals and segments
-    cJSON_AddNumberToObject(journey, "total_cost", total_cost);
-    cJSON_AddNumberToObject(journey, "total_duration", total_duration);
-    cJSON_AddItemToObject(journey, "segments", segments);
-    cJSON_AddItemToObject(root, "journey", journey);
+// Add segment details
+cJSON_AddStringToObject(segment, "from", f->from);
+cJSON_AddStringToObject(segment, "to", f->to);
+cJSON_AddStringToObject(segment, "day", f->day_of_week);
 
-    // Write to file
-    char* json_str = cJSON_Print(root);
-    FILE* fp = fopen(filename, "w");
-    if (!fp) {
-        cJSON_Delete(root);
-        free(json_str);
-        return false;
-    }
-    
-    fputs(json_str, fp);
-    fclose(fp);
-    
-    // Cleanup
-    cJSON_Delete(root);
-    free(json_str);
-    return true;
+minutes_to_time(f->departure_time, time_str);
+cJSON_AddStringToObject(segment, "departure_time", time_str);
+
+minutes_to_time(f->arrival_time, time_str);
+cJSON_AddStringToObject(segment, "arrival_time", time_str);
+
+cJSON_AddNumberToObject(segment, "duration", f->duration);
+cJSON_AddNumberToObject(segment, "cost", f->cost);
+cJSON_AddNumberToObject(segment, "distance", f->distance);
+
+cJSON_AddItemToArray(cheapest_segments, segment);
+
+// Update totals
+total_cost += f->cost;
+total_duration += f->duration;
+}
+
+// Add totals and segments
+cJSON_AddNumberToObject(cheapest_journey, "total_cost", total_cost);
+cJSON_AddNumberToObject(cheapest_journey, "total_duration", total_duration);
+cJSON_AddItemToObject(cheapest_journey, "segments", cheapest_segments);
+cJSON_AddItemToObject(journeys, "cheapest", cheapest_journey);
+}
+
+// Create fastest journey if available
+if (fastest_path_size > 0) {
+cJSON* fastest_journey = cJSON_CreateObject();
+cJSON* fastest_segments = cJSON_CreateArray();
+double total_cost = 0;
+int total_duration = 0;
+
+for (int i = 0; i < fastest_path_size; i++) {
+ScheduledFlight* f = &flights[fastest_path[i]];
+cJSON* segment = cJSON_CreateObject();
+
+// Add segment details
+cJSON_AddStringToObject(segment, "from", f->from);
+cJSON_AddStringToObject(segment, "to", f->to);
+cJSON_AddStringToObject(segment, "day", f->day_of_week);
+
+minutes_to_time(f->departure_time, time_str);
+cJSON_AddStringToObject(segment, "departure_time", time_str);
+
+minutes_to_time(f->arrival_time, time_str);
+cJSON_AddStringToObject(segment, "arrival_time", time_str);
+
+cJSON_AddNumberToObject(segment, "duration", f->duration);
+cJSON_AddNumberToObject(segment, "cost", f->cost);
+cJSON_AddNumberToObject(segment, "distance", f->distance);
+
+cJSON_AddItemToArray(fastest_segments, segment);
+
+// Update totals
+total_cost += f->cost;
+total_duration += f->duration;
+}
+
+// Add totals and segments
+cJSON_AddNumberToObject(fastest_journey, "total_cost", total_cost);
+cJSON_AddNumberToObject(fastest_journey, "total_duration", total_duration);
+cJSON_AddItemToObject(fastest_journey, "segments", fastest_segments);
+cJSON_AddItemToObject(journeys, "fastest", fastest_journey);
+}
+
+// Create optimal journey if available
+if (optimal_path_size > 0) {
+cJSON* optimal_journey = cJSON_CreateObject();
+cJSON* optimal_segments = cJSON_CreateArray();
+double total_cost = 0;
+int total_duration = 0;
+
+for (int i = 0; i < optimal_path_size; i++) {
+ScheduledFlight* f = &flights[optimal_path[i]];
+cJSON* segment = cJSON_CreateObject();
+
+// Add segment details
+cJSON_AddStringToObject(segment, "from", f->from);
+cJSON_AddStringToObject(segment, "to", f->to);
+cJSON_AddStringToObject(segment, "day", f->day_of_week);
+
+minutes_to_time(f->departure_time, time_str);
+cJSON_AddStringToObject(segment, "departure_time", time_str);
+
+minutes_to_time(f->arrival_time, time_str);
+cJSON_AddStringToObject(segment, "arrival_time", time_str);
+
+cJSON_AddNumberToObject(segment, "duration", f->duration);
+cJSON_AddNumberToObject(segment, "cost", f->cost);
+cJSON_AddNumberToObject(segment, "distance", f->distance);
+
+cJSON_AddItemToArray(optimal_segments, segment);
+
+// Update totals
+total_cost += f->cost;
+total_duration += f->duration;
+}
+
+// Add totals and segments
+cJSON_AddNumberToObject(optimal_journey, "total_cost", total_cost);
+cJSON_AddNumberToObject(optimal_journey, "total_duration", total_duration);
+cJSON_AddItemToObject(optimal_journey, "segments", optimal_segments);
+cJSON_AddItemToObject(journeys, "optimal", optimal_journey);
+}
+
+// Add all journeys to the root
+cJSON_AddItemToObject(root, "journeys", journeys);
+
+// Write to file
+char* json_str = cJSON_Print(root);
+FILE* fp = fopen(filename, "w");
+if (!fp) {
+cJSON_Delete(root);
+free(json_str);
+return false;
+}
+
+fputs(json_str, fp);
+fclose(fp);
+
+// Cleanup
+cJSON_Delete(root);
+free(json_str);
+return true;
 }
 
 /**
@@ -702,7 +785,10 @@ double calculate_route_cost(RouteType route_type, double cost, int duration, dou
     }
 }
 
- int main(int argc, char* argv[]) {
+ /**
+ * Modified main function to find all three path types
+ */
+int main(int argc, char* argv[]) {
     if (argc < 6) {
         printf("Usage: %s <input.json> <output.json> <from> <to> <day> [departure_time]\n", argv[0]);
         printf("Example: %s flights.json result.json JFK LAX monday 480\n", argv[0]);
@@ -726,22 +812,41 @@ double calculate_route_cost(RouteType route_type, double cost, int duration, dou
 
     printf("Loaded %d airports and %d flights\n", num_airports, num_flights);
 
-    // Find optimal path (using CHEAPEST by default)
-    int path[MAX_PATH];
-    int path_size = 0;
-    RouteType route_type = CHEAPEST; // Can be changed to FASTEST or OPTIMAL
+    // Find optimal paths for all three route types
+    int cheapest_path[MAX_PATH];
+    int cheapest_path_size = 0;
+    
+    int fastest_path[MAX_PATH];
+    int fastest_path_size = 0;
+    
+    int optimal_path[MAX_PATH];
+    int optimal_path_size = 0;
+    
+    bool found_cheapest = find_optimal_path(from_airport, to_airport, day, departure_time, 
+                                          CHEAPEST, cheapest_path, &cheapest_path_size);
+    
+    bool found_fastest = find_optimal_path(from_airport, to_airport, day, departure_time, 
+                                         FASTEST, fastest_path, &fastest_path_size);
+    
+    bool found_optimal = find_optimal_path(from_airport, to_airport, day, departure_time, 
+                                         OPTIMAL, optimal_path, &optimal_path_size);
 
-    if (!find_optimal_path(from_airport, to_airport, day, departure_time, 
-                          route_type, path, &path_size)) {
-        fprintf(stderr, "No viable path found from %s to %s\n", from_airport, to_airport);
+    if (!found_cheapest && !found_fastest && !found_optimal) {
+        fprintf(stderr, "No viable paths found from %s to %s\n", from_airport, to_airport);
         return 1;
     }
 
-    printf("Found optimal path with %d flight segments\n", path_size);
+    printf("Found paths:\n");
+    if (found_cheapest) printf("- Cheapest: %d flight segments\n", cheapest_path_size);
+    if (found_fastest) printf("- Fastest: %d flight segments\n", fastest_path_size);
+    if (found_optimal) printf("- Optimal: %d flight segments\n", optimal_path_size);
 
     // Write results to JSON output file
-    if (!write_json_output(output_file, path, path_size, from_airport, to_airport, 
-                          day, departure_time, route_type)) {
+    if (!write_json_output(output_file, 
+                          cheapest_path, cheapest_path_size,
+                          fastest_path, fastest_path_size,
+                          optimal_path, optimal_path_size,
+                          from_airport, to_airport, day, departure_time)) {
         fprintf(stderr, "Failed to write output file %s\n", output_file);
         return 1;
     }
@@ -749,4 +854,3 @@ double calculate_route_cost(RouteType route_type, double cost, int duration, dou
     printf("Results successfully written to %s\n", output_file);
     return 0;
 }
- 
