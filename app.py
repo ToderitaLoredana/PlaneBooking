@@ -1,31 +1,39 @@
-from flask import Flask, jsonify
+# app.py
+from flask import Flask, jsonify, request
 from flightsrun import run
 import json
 import os
 
 app = Flask(__name__)
 
-# Function to load data from JSON file
 def load_data_from_file():
     try:
-        # Check if file exists
         if os.path.exists('output.json'):
             with open('output.json', 'r') as file:
                 return json.load(file)
         else:
-            print("Warning: output.json file not found. Using default data.")
-            return {"message": "No data available. Place 'output.json' file in the same directory as this script."}
+            return {"message": "No data available."}
     except Exception as e:
-        print(f"Error loading JSON file: {e}")
-        return {"error": "Could not load data from file"}
+        return {"error": f"Could not load data from file: {e}"}
 
-# Define API endpoint to return data from JSON file
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    run()
-    data = load_data_from_file()
-    return jsonify(data)
+@app.route('/api/data', methods=['GET', 'POST'])
+def handle_data():
+    if request.method == 'POST':
+        data = request.get_json()
+        source = data.get('source')
+        destination = data.get('destination')
+        day = data.get('day')
+        departure_time = data.get('departure_time')
 
+        if not all([source, destination, day, departure_time]):
+            return jsonify({"error": "Missing one or more required fields"}), 400
+
+        run(source, destination, day, departure_time)
+        output_data = load_data_from_file()
+        return jsonify(output_data)
+
+    # Optional GET fallback
+    return jsonify({"message": "Use POST with JSON body to get flight data."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
