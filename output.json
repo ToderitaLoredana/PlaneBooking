@@ -1,76 +1,76 @@
 {
-	"origin":	"NYC",
-	"destination":	"BER",
-	"departure_day":	"Monday",
+	"origin":	"TYO",
+	"destination":	"DXB",
+	"departure_day":	"thursday",
 	"departure_time":	"00:08",
 	"journeys":	{
 		"cheapest":	{
-			"total_cost":	547.500000,
-			"total_duration":	885,
+			"total_cost":	703,
+			"total_duration":	675,
 			"segments":	[{
-					"from":	"NYC",
-					"to":	"LON",
-					"day":	"tuesday",
-					"departure_time":	"10:30",
-					"arrival_time":	"22:30",
-					"duration":	720,
-					"cost":	405,
-					"distance":	5567
-				}, {
-					"from":	"LON",
-					"to":	"BER",
+					"from":	"TYO",
+					"to":	"SIN",
 					"day":	"wednesday",
-					"departure_time":	"13:15",
-					"arrival_time":	"16:00",
-					"duration":	165,
-					"cost":	142.500000,
-					"distance":	932
+					"departure_time":	"08:45",
+					"arrival_time":	"15:30",
+					"duration":	405,
+					"cost":	304,
+					"distance":	5300
+				}, {
+					"from":	"SIN",
+					"to":	"DXB",
+					"day":	"wednesday",
+					"departure_time":	"23:15",
+					"arrival_time":	"03:45",
+					"duration":	270,
+					"cost":	399,
+					"distance":	5840
 				}]
 		},
 		"fastest":	{
-			"total_cost":	607.500000,
-			"total_duration":	885,
+			"total_cost":	703,
+			"total_duration":	675,
 			"segments":	[{
-					"from":	"NYC",
-					"to":	"LON",
-					"day":	"monday",
-					"departure_time":	"08:00",
-					"arrival_time":	"20:00",
-					"duration":	720,
-					"cost":	450,
-					"distance":	5567
+					"from":	"TYO",
+					"to":	"SIN",
+					"day":	"wednesday",
+					"departure_time":	"08:45",
+					"arrival_time":	"15:30",
+					"duration":	405,
+					"cost":	304,
+					"distance":	5300
 				}, {
-					"from":	"LON",
-					"to":	"BER",
-					"day":	"saturday",
-					"departure_time":	"06:45",
-					"arrival_time":	"09:30",
-					"duration":	165,
-					"cost":	157.500000,
-					"distance":	932
+					"from":	"SIN",
+					"to":	"DXB",
+					"day":	"wednesday",
+					"departure_time":	"23:15",
+					"arrival_time":	"03:45",
+					"duration":	270,
+					"cost":	399,
+					"distance":	5840
 				}]
 		},
 		"optimal":	{
-			"total_cost":	562.500000,
-			"total_duration":	885,
+			"total_cost":	703,
+			"total_duration":	675,
 			"segments":	[{
-					"from":	"NYC",
-					"to":	"LON",
-					"day":	"tuesday",
-					"departure_time":	"10:30",
-					"arrival_time":	"22:30",
-					"duration":	720,
-					"cost":	405,
-					"distance":	5567
+					"from":	"TYO",
+					"to":	"SIN",
+					"day":	"wednesday",
+					"departure_time":	"08:45",
+					"arrival_time":	"15:30",
+					"duration":	405,
+					"cost":	304,
+					"distance":	5300
 				}, {
-					"from":	"LON",
-					"to":	"BER",
-					"day":	"saturday",
-					"departure_time":	"06:45",
-					"arrival_time":	"09:30",
-					"duration":	165,
-					"cost":	157.500000,
-					"distance":	932
+					"from":	"SIN",
+					"to":	"DXB",
+					"day":	"wednesday",
+					"departure_time":	"23:15",
+					"arrival_time":	"03:45",
+					"duration":	270,
+					"cost":	399,
+					"distance":	5840
 				}]
 		}
 	}

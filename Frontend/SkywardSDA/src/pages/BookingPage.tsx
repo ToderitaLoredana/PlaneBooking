@@ -7,6 +7,8 @@ import { Flight, Booking, PaymentDetails } from '../types';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
+import { createBooking } from '../services/apiClient';
+
 const BookingPage: React.FC = () => {
   const { flightId } = useParams<{ flightId: string }>();
   const navigate = useNavigate();
@@ -134,6 +136,8 @@ const BookingPage: React.FC = () => {
       setStep('confirmation');
       setIsLoading(false);
     }, 1500);
+
+    
   };
   
   const formatCardNumber = (value: string) => {

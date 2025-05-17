@@ -1,0 +1,16 @@
+{
+    "source": "TYO",
+    "destination": "DXB",
+    "day" : "tuesday",
+    "departure_time": "08:45"
+}
+
+curl -iX POST http://127.0.0.1:5000/api/data -H "Content-Type: application/json" -d \\
+    '
+        {
+            "source": "TYO",
+            "destination": "DXB",
+            "day" : "tuesday",
+            "departure_time": "08:45"
+        }
+    '
